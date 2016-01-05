@@ -1,4 +1,4 @@
-from bs4 import BeautifulSoup
+from BeautifulSoup import bs4
 import urllib2
 
 class httpWorker:

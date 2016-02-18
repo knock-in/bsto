@@ -1,4 +1,4 @@
-from BeautifulSoup import bs4
+from bs4 import BeautifulSoup
 import urllib2
 
 class httpWorker:
@@ -9,4 +9,4 @@ class httpWorker:
         return urllib2.urlopen(self.site + path)
         
     def getSoup(self, path):
-        return BeautifulSoup(self.getHtml(path))
+        return BeautifulSoup(self.getHtml(path), "lxml")

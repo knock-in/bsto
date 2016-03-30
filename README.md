@@ -1,8 +1,13 @@
 # bsto
 
-## Installation
+bsto is a simple burning series api using beautifulsoup for html parsing and urllib for downloading html content.
 
+### Installation
 
-## Example
+`pip install -r requirements.txt`
 
-See example.py
+### Example
+
+See example.py or run with:
+
+`python example.py`

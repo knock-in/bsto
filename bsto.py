@@ -12,11 +12,11 @@ class bsto:
     
     def load(self):
         for tag in self.indexHtml.find_all('div', class_='genre'):
-            gerne = tag.find('span').find('strong').text
+            genre = tag.find('span').find('strong').text
             for seriesHtml in tag.find_all('li'):
                 name = seriesHtml.find('a').text
                 link = seriesHtml.find('a').get('href')
-                self.series.append(Series(gerne, link, name))
+                self.series.append(Series(genre, link, name))
         return self
     
     def loadSeries(self, seriesNum, streamLinks = False):
@@ -46,10 +46,14 @@ class bsto:
 
 
 class Series:
-    def __init__(self, gerne, link, name, load = False):
-        self.gerne = gerne;
+    def __init__(self, genre, link, name, load = False):
+        self.genre = genre;
         self.link = link;
         self.name = name;
+        self.cover = ''
+        self.description = ''
+        self.infos = {}
+        
         self.seasons = [];
         self.loadedData = False;
         self.loadedStreams = False;
@@ -74,12 +78,20 @@ class Series:
     def loadData(self, httpWorker, streamLoad = False):
         soup = httpWorker.getSoup(self.link)
         
+        self.description = soup.find(class_='justify').getText()
+        self.cover = soup.find(alt='Cover').get('src')
+        
+        for div in soup.find(class_='infos').find_all('div'):
+            key = div.span.getText()
+            value = div.p.get_text()
+            self.infos[key] = value
+        
         seasonCount = 0
-        for tagHtml in soup.find_all('ul', class_='pages'):
+        for tagHtml in soup.find_all('ul', class_='clearfix'):
             for seasonHtml in tagHtml.find_all('li'):
                 seasonCount += 1
         
-        self.seasonCount = seasonCount -1 # Since it counts every li we have to subtract the last li which is just a button to a random season
+        self.seasonCount = seasonCount
         
         # Now do the same to the other seasons
         for x in range(0, self.seasonCount):
@@ -92,39 +104,35 @@ class Series:
                 
                 
             first = True
-            for table in seasonSoup.find_all('table'):
+            for table in seasonSoup.find_all('table', class_='episodes'):
                 if first == True: # Only first table has relevant informations
+                    episodeNum = 0;
                     for tr in table.find_all('tr'):
-                        tdIterator = 0
-                        episodeNum = '';
                         episodeLink = '';
                         episodeName = '';
                         episodeStreams = []
-                        for td in tr.find_all('td'):
-                            if tdIterator == 0:
-                                episodeNum = td.string
-                            elif tdIterator == 1:
-                                episodeName = td.a.span.string
-                                episodeLink = td.a.get('href')
-                            elif tdIterator == 2:
-                                for streamHtml in td.find_all('a'):
-                                    streamName = streamHtml.get('title')
-                                    streamLink = streamHtml.get('href')
-                                    tmpStream = Stream(streamName, streamLink)
-                                    if streamLoad == True:
-                                        streamSoup = httpWorker.getSoup(tmpStream.streamLink)
-                                        tmpStream.streamVideoLink = streamSoup.find(id="root").section.div.find(target="_blank").get('href')
+                        count = 0
+                        td = tr.find('td')
+                        episodeNum += 1
+                        for streamHtml in td.find_all('a'):
+                            episodeName = streamHtml.get('title')
+                            episodeLink = streamHtml.get('href')
+                            if streamLoad == True:
+                                episodeSoup = httpWorker.getSoup(episodeLink)
+                                hostsLinks = episodeSoup.find('ul',class_='hoster-tabs').find_all('li')
+                                hosts = []
+                                for li in hostsLinks:
+                                    hosts.append(li.find('a').get('href'))
+                                for host in hosts:
+                                    streamSoup = httpWorker.getSoup(host)
+                                    streamLink = streamSoup.find(id="root").section.find(target="_blank").get('href')
+                                    streamName = streamSoup.find('ul',class_='hoster-tabs').find(class_='active').find('a').getText().strip()
+                                    tmpStream = Stream(streamName, host)
+                                    tmpStream.streamVideoLink = streamLink
                                     episodeStreams.append(tmpStream)
-                                    
-                                if streamLoad == True:
-                                    self.loadedStreams = True
-                                    
-                                
-                                
-                            tdIterator += 1
-                            
-                        if str(episodeNum) != '':
-                            self.getSeason(x).addEpisode(Episode(episodeNum, episodeLink, episodeName, episodeStreams));
+                        if streamLoad == True:
+                            self.loadedStreams = True
+                        self.getSeason(x).addEpisode(Episode(episodeNum, episodeLink, episodeName, episodeStreams));
                     first = False # Afterwards turn it off
             
         # All episodes now saved with each streams

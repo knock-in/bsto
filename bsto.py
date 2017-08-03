@@ -79,7 +79,10 @@ class Series:
         soup = httpWorker.getSoup(self.link)
         
         self.description = soup.find(class_='justify').getText()
-        self.cover = soup.find(alt='Cover').get('src')
+        coverTag = soup.find(alt='Cover')
+        if coverTag != None:
+            self.cover = coverTag.get('src')
+            
         
         for div in soup.find(class_='infos').find_all('div'):
             key = div.span.getText()

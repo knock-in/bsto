@@ -21,5 +21,4 @@ print mySeries.getSeason(0) is None
 ### True
 
 # only name, gerne and link remains
-print '%s : %s : %s' % (mySeries.name, mySeries.gerne, mySeries.link)
-### Aoi Hana  : Anime : serie/Aoi-Hana
+print '%s : %s : %s' % (mySeries.name, mySeries.genre, mySeries.link)
